@@ -344,3 +344,371 @@ NotEnoughEnergyError
   - **Проверка:** Если self.terra_hopper is None, метод должен выбросить исключение NoTransportError с текстом: "Транспорт не выбран. Сначала создайте транспорт!"
 
   - Если транспорт существует, метод вызывает соответствующий метод у self.terra_hopper и возвращает полученный результат пользователю.
+
+# 5. Сценарии
+
+## 5.1 Модульные тесты
+
+Каждый тест следует шаблону **AAA (Arrange – Act – Assert)**:
+
+1. **Arrange** — атрибуты, с которыми создается объект (значения по умолчанию не перечисляются).
+2. **Act** — одно целевое действие (конструктор или метод).
+3. **Assert** — ожидаемые значения атрибутов либо исключение и его текст.
+
+Всего 40 модульных тестов. Порядок сценариев: конструктор `TerraHopper`, затем методы в порядке объявления из раздела 3.4, затем `Driver`.
+
+### Позитивные сценарии
+
+#### Конструктор TerraHopper
+
+##### Сценарий 1. Инициализация с параметрами по умолчанию
+
+* **Arrange:** name="Крот-1", mass_kg=200.0
+* **Act:** `TerraHopper(name, mass_kg)`
+* **Assert:** `name == "Крот-1"`, `mass_kg == 200.0`, `strength == 100.0`, `reactor_energy == 100.0`, `location_state == "surface"`, `distance == 0.0`
+
+##### Сценарий 2. Инициализация со всеми параметрами
+
+* **Arrange:** name="Крот-1", mass_kg=350.0, strength=80.0, reactor_energy=60.0
+* **Act:** `TerraHopper(name, mass_kg, strength, reactor_energy)`
+* **Assert:** `name == "Крот-1"`, `mass_kg == 350.0`, `strength == 80.0`, `reactor_energy == 60.0`, `location_state == "surface"`, `distance == 0.0`
+
+#### basic_jump
+
+##### Сценарий 3. Успешный прыжок с поверхности
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **Act:** `basic_jump()`
+* **Assert:** `distance == 10.0`, `strength == 95.0`, `reactor_energy == 100.0`, `location_state == "surface"`
+
+##### Сценарий 4. Сила ровно равна требуемой (5.0)
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=5.0, location_state="surface", distance=0.0
+* **Act:** `basic_jump()`
+* **Assert:** `distance == 10.0`, `strength == 0.0`, `location_state == "surface"`
+
+#### long_jump
+
+##### Сценарий 5. Успешный прыжок без реактора
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **Act:** `long_jump(use_reactor=False)`
+* **Assert:** `distance == 30.0`, `strength == 86.0`, `reactor_energy == 100.0`
+
+##### Сценарий 6. Успешный прыжок с форсажем
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **Act:** `long_jump(use_reactor=True)`
+* **Assert:** `distance == 45.0`, `strength == 86.0`, `reactor_energy == 50.0`
+
+##### Сценарий 7. Энергия реактора ровно 50.0 при форсаже
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=50.0, location_state="surface", distance=0.0
+* **Act:** `long_jump(use_reactor=True)`
+* **Assert:** `distance == 45.0`, `strength == 86.0`, `reactor_energy == 0.0`
+
+#### _apply_distance_recovery
+
+##### Сценарий 8. Восстановление при пересечении отметки 100 м
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=50.0, reactor_energy=50.0, location_state="underground", distance=90.0
+* **Act:** `drill_forward()`
+* **Assert:** `distance == 130.0`, `strength == 69.0`, `reactor_energy == 35.0`
+
+##### Сценарий 9. Ограничение восстановления значением 100.0
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=90.0, reactor_energy=95.0, location_state="underground", distance=90.0
+* **Act:** `drill_forward()`
+* **Assert:** `distance == 130.0`, `strength == 100.0`, `reactor_energy == 80.0`
+
+#### get_current_status
+
+##### Сценарий 10. Возврат словаря состояния
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=80.0, reactor_energy=90.0, location_state="surface", distance=20.0
+* **Act:** `get_current_status()`
+* **Assert:** возвращается `{"distance": 20.0, "strength": 80.0, "reactor_energy": 90.0}`; `distance == 20.0`, `strength == 80.0`, `reactor_energy == 90.0`
+
+#### go_underground
+
+##### Сценарий 11. Успешное погружение с поверхности
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **Act:** `go_underground()`
+* **Assert:** `location_state == "underground"`, `strength == 94.0`, `distance == 0.0`, `reactor_energy == 100.0`
+
+#### return_to_surface
+
+##### Сценарий 12. Успешный подъем из подземелья
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="underground", distance=0.0
+* **Act:** `return_to_surface()`
+* **Assert:** `location_state == "surface"`, `strength == 94.0`, `distance == 0.0`, `reactor_energy == 100.0`
+
+#### drill_forward
+
+##### Сценарий 13. Успешный подземный рывок
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="underground", distance=0.0
+* **Act:** `drill_forward()`
+* **Assert:** `distance == 40.0`, `strength == 84.0`, `reactor_energy == 50.0`
+
+#### Driver
+
+##### Сценарий 14. Инициализация водителя без транспорта
+
+* **Arrange:** —
+* **Act:** `Driver()`
+* **Assert:** `terra_hopper is None`
+
+##### Сценарий 15. Создание транспорта с параметрами по умолчанию
+
+* **Arrange:** name="Крот-1", mass_kg=200.0
+* **Act:** `driver.create_hopper(name, mass_kg)`
+* **Assert:** `driver.terra_hopper` — экземпляр `TerraHopper`; `name == "Крот-1"`, `strength == 100.0`, `reactor_energy == 100.0`
+
+##### Сценарий 16. Создание транспорта со всеми параметрами
+
+* **Arrange:** name="Крот-1", mass_kg=350.0, strength=80.0, reactor_energy=60.0
+* **Act:** `driver.create_hopper(name, mass_kg, strength, reactor_energy)`
+* **Assert:** `mass_kg == 350.0`, `strength == 80.0`, `reactor_energy == 60.0`
+
+##### Сценарий 17. Делегирование `basic_jump`
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, location_state="surface", distance=0.0
+* **Act:** `driver.basic_jump()`
+* **Assert:** `distance == 10.0`, `strength == 95.0`
+
+##### Сценарий 18. Делегирование `long_jump` с форсажем
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **Act:** `driver.long_jump(use_reactor=True)`
+* **Assert:** `distance == 45.0`, `strength == 86.0`, `reactor_energy == 50.0`
+
+##### Сценарий 19. Делегирование `drill_forward`
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="underground", distance=0.0
+* **Act:** `driver.drill_forward()`
+* **Assert:** `distance == 40.0`, `strength == 84.0`, `reactor_energy == 50.0`
+
+##### Сценарий 20. Делегирование `get_current_status`
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=80.0, reactor_energy=90.0, location_state="surface", distance=20.0
+* **Act:** `driver.get_current_status()`
+* **Assert:** возвращается `{"distance": 20.0, "strength": 80.0, "reactor_energy": 90.0}`
+
+### Негативные сценарии
+
+#### Конструктор TerraHopper
+
+##### Сценарий 21. Пустое имя
+
+* **Arrange:** name="", mass_kg=200.0
+* **Act:** `TerraHopper(name, mass_kg)`
+* **Assert:** `ValueError`
+
+##### Сценарий 22. Масса меньше 100.0
+
+* **Arrange:** name="Крот-1", mass_kg=90.0
+* **Act:** `TerraHopper(name, mass_kg)`
+* **Assert:** `ValueError`
+
+##### Сценарий 23. Масса больше 500.0
+
+* **Arrange:** name="Крот-1", mass_kg=550.0
+* **Act:** `TerraHopper(name, mass_kg)`
+* **Assert:** `ValueError`
+
+##### Сценарий 24. `strength` больше 100.0
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=110.0
+* **Act:** `TerraHopper(name, mass_kg, strength)`
+* **Assert:** `ValueError`
+
+##### Сценарий 25. `reactor_energy` меньше 0.0
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, reactor_energy=-10.0
+* **Act:** `TerraHopper(name, mass_kg, reactor_energy=reactor_energy)`
+* **Assert:** `ValueError`
+
+#### basic_jump
+
+##### Сценарий 26. Прыжок под землей
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, location_state="underground", distance=0.0
+* **Act:** `basic_jump()`
+* **Assert:** `InvalidLocationError` — "Прыжок невозможен: транспорт находится под землей."; `distance == 0.0`, `strength == 100.0`
+
+##### Сценарий 27. Нехватка силы
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=3.0, location_state="surface", distance=0.0
+* **Act:** `basic_jump()`
+* **Assert:** `NotEnoughStrengthError` — "Не достаточно силы для выполнения обычного прыжка."; `distance == 0.0`, `strength == 3.0`
+
+#### long_jump
+
+##### Сценарий 28. Прыжок под землей
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, location_state="underground", distance=0.0
+* **Act:** `long_jump()`
+* **Assert:** `InvalidLocationError` — "Дальний прыжок невозможен: транспорт находится под землей."; `distance == 0.0`, `strength == 100.0`
+
+##### Сценарий 29. Нехватка силы
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=10.0, location_state="surface", distance=0.0
+* **Act:** `long_jump()`
+* **Assert:** `NotEnoughStrengthError` — "Недостаточно силы для выполнения дальнего прыжка."; `distance == 0.0`, `strength == 10.0`
+
+##### Сценарий 30. Форсаж при нехватке энергии реактора
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=30.0, location_state="surface", distance=0.0
+* **Act:** `long_jump(use_reactor=True)`
+* **Assert:** `NotEnoughEnergyError` — "Недостаточно энергии реактора для форсажа (требуется 50.0)."; `distance == 0.0`, `strength == 100.0`, `reactor_energy == 30.0`
+
+#### _apply_distance_recovery
+
+##### Сценарий 31. Восстановление не срабатывает до отметки 100 м
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="underground", distance=0.0
+* **Act:** `drill_forward()`
+* **Assert:** `distance == 40.0`, `strength == 84.0`, `reactor_energy == 50.0`
+
+#### get_current_status
+
+_Негативные сценарии отсутствуют: метод не выбрасывает исключений._
+
+#### go_underground
+
+##### Сценарий 32. Повторное погружение
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, location_state="underground", distance=0.0
+* **Act:** `go_underground()`
+* **Assert:** `InvalidLocationError` — "Транспорт уже находится под землей."; `location_state == "underground"`, `strength == 100.0`
+
+##### Сценарий 33. Нехватка силы
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=5.0, location_state="surface", distance=0.0
+* **Act:** `go_underground()`
+* **Assert:** `NotEnoughStrengthError` — "Недостаточно силы для погружения под землю."; `location_state == "surface"`, `strength == 5.0`
+
+#### return_to_surface
+
+##### Сценарий 34. Подъем с поверхности
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, location_state="surface", distance=0.0
+* **Act:** `return_to_surface()`
+* **Assert:** `InvalidLocationError` — "Транспорт уже находится на поверхности."; `location_state == "surface"`, `strength == 100.0`
+
+##### Сценарий 35. Нехватка силы
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=5.0, location_state="underground", distance=0.0
+* **Act:** `return_to_surface()`
+* **Assert:** `NotEnoughStrengthError` — "Недостаточно силы для возвращения на поверхность."; `location_state == "underground"`, `strength == 5.0`
+
+#### drill_forward
+
+##### Сценарий 36. Бурение на поверхности
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **Act:** `drill_forward()`
+* **Assert:** `InvalidLocationError` — "Подземное бурение невозможно на поверхности. Сначала погрузитесь."; `distance == 0.0`, `strength == 100.0`, `reactor_energy == 100.0`
+
+##### Сценарий 37. Нехватка силы
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=10.0, reactor_energy=100.0, location_state="underground", distance=0.0
+* **Act:** `drill_forward()`
+* **Assert:** `NotEnoughStrengthError` — "Недостаточно силы для подземного бурения."; `distance == 0.0`, `strength == 10.0`, `reactor_energy == 100.0`
+
+##### Сценарий 38. Нехватка энергии реактора
+
+* **Arrange:** name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=40.0, location_state="underground", distance=0.0
+* **Act:** `drill_forward()`
+* **Assert:** `NotEnoughEnergyError` — "Недостаточно энергии реактора для запуска буров (требуется 50.0)."; `distance == 0.0`, `strength == 100.0`, `reactor_energy == 40.0`
+
+#### Driver
+
+##### Сценарий 39. `basic_jump` без транспорта
+
+* **Arrange:** terra_hopper=None
+* **Act:** `driver.basic_jump()`
+* **Assert:** `NoTransportError` — "Транспорт не выбран. Сначала создайте транспорт!"; то же поведение для `long_jump`, `go_underground`, `return_to_surface`, `drill_forward`
+
+##### Сценарий 40. `get_current_status` без транспорта
+
+* **Arrange:** terra_hopper=None
+* **Act:** `driver.get_current_status()`
+* **Assert:** `NoTransportError` — "Транспорт не выбран. Сначала создайте транспорт!"
+
+## 5.2 Функциональные тесты
+
+Каждый тест следует шаблону **Given – When – Then**:
+
+1. **Given (дано)** — начальное состояние мира.
+2. **When (когда)** — действие или событие.
+3. **Then (тогда)** — ожидаемый результат.
+
+Всего 8 функциональных тестов (20% от числа модульных). Сценарии выполняются через публичный интерфейс `Driver`.
+
+#### Маршрут по поверхности
+
+##### Сценарий 41. Два последовательных прыжка
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **When:** `driver.basic_jump()`, затем `driver.long_jump()`
+* **Then:** `distance == 40.0`, `strength == 81.0`, `reactor_energy == 100.0`, `location_state == "surface"`
+
+#### Дальний прыжок с форсажем
+
+##### Сценарий 42. Прыжок с использованием реактора
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **When:** `driver.long_jump(use_reactor=True)`
+* **Then:** `distance == 45.0`, `strength == 86.0`, `reactor_energy == 50.0`
+
+#### Погружение и бурение
+
+##### Сценарий 43. Погружение с последующим подземным рывком
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **When:** `driver.go_underground()`, затем `driver.drill_forward()`
+* **Then:** `location_state == "underground"`, `distance == 40.0`, `strength == 78.0`, `reactor_energy == 50.0`
+
+#### Полный цикл под землей
+
+##### Сценарий 44. Погружение, бурение и возврат на поверхность
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **When:** `driver.go_underground()`, `driver.drill_forward()`, затем `driver.return_to_surface()`
+* **Then:** `location_state == "surface"`, `distance == 40.0`, `strength == 72.0`, `reactor_energy == 50.0`
+
+#### Преодоление отметки 100 м
+
+##### Сценарий 45. Маршрут длиной более 100 м с пассивным восстановлением
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **When:** `driver.go_underground()`, `driver.drill_forward()`, `driver.return_to_surface()`, `driver.basic_jump()`, `driver.long_jump()`, `driver.go_underground()`, затем `driver.drill_forward()`
+* **Then:** `distance == 120.0`, `strength == 66.0`, `reactor_energy == 35.0`, `location_state == "underground"`
+
+#### Прыжок невозможен из-под земли
+
+##### Сценарий 46. Попытка прыжка в подземном режиме
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=100.0, reactor_energy=100.0, location_state="underground", distance=0.0
+* **When:** `driver.basic_jump()`
+* **Then:** `InvalidLocationError` — "Прыжок невозможен: транспорт находится под землей."
+
+#### Истощение силы
+
+##### Сценарий 47. Прыжок при запасе силы 3.0
+
+* **Given:** водитель создал транспорт: name="Крот-1", mass_kg=200.0, strength=3.0, reactor_energy=100.0, location_state="surface", distance=0.0
+* **When:** `driver.basic_jump()`
+* **Then:** `NotEnoughStrengthError` — "Не достаточно силы для выполнения обычного прыжка."
+
+#### Команда без транспорта
+
+##### Сценарий 48. Действие водителя до создания транспорта
+
+* **Given:** водитель без транспорта: terra_hopper=None
+* **When:** `driver.basic_jump()`
+* **Then:** `NoTransportError` — "Транспорт не выбран. Сначала создайте транспорт!"
