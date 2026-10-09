@@ -188,9 +188,9 @@ def get_current_status(self) -> dict:
 **Исключения:** Отсутствуют.
 
 **Правила:**
-  - Формирует словарь с текущими значениями distance, strength и reactor_energy.
+  - Формирует словарь с текущими значениями distance, strength, reactor_energy и location_state.
   - Выводит её в консоль с помощью print().
-  - Возвращает словарь с ключами "distance", "strength" и "reactor_energy", содержащими актуальные числовые значения (float).
+  - Возвращает словарь с ключами "distance", "strength", "reactor_energy" (актуальные числовые значения float) и "location_state" (текущее положение "surface" или "underground").
 
 #### 3.4.5. go_underground
 ```python
@@ -665,7 +665,7 @@ drill_forward
 2. **When (когда)** — действие или событие.
 3. **Then (тогда)** — ожидаемый результат.
 
-Всего 8 функциональных тестов (20% от числа модульных). Сценарии выполняются через публичный интерфейс `Driver`; перед проверкой состояния вызывается `get_current_status()`.
+Всего 8 функциональных тестов (20% от числа модульных). Сценарии выполняются через публичный интерфейс `Driver`; перед проверкой состояния вызывается `get_current_status()` и сверяется весь возвращаемый словарь (distance, strength, reactor_energy, location_state).
 
 #### Маршрут по поверхности
 
@@ -680,6 +680,7 @@ drill_forward
   - `distance == 40.0`
   - `strength == 81.0`
   - `reactor_energy == 100.0`
+  - `location_state == "surface"`
 
 #### Два прыжка с форсажем
 
@@ -694,6 +695,7 @@ drill_forward
   - `distance == 90.0`
   - `strength == 72.0`
   - `reactor_energy == 0.0`
+  - `location_state == "surface"`
 
 #### Прыжок с реактором без энергии
 
@@ -706,6 +708,7 @@ drill_forward
   - `driver.long_jump(use_reactor=True)`
 * **Then:**
   - `NotEnoughEnergyError` — "Недостаточно энергии реактора для форсажа (требуется 50.0)."
+  - состояние не изменилось: `distance == 90.0`, `strength == 72.0`, `reactor_energy == 0.0`, `location_state == "surface"`
 
 #### Истощение силы
 
@@ -727,6 +730,7 @@ drill_forward
   - `driver.long_jump()`
 * **Then:**
   - `NotEnoughStrengthError` — "Недостаточно силы для выполнения дальнего прыжка."
+  - перед падением: `strength == 10.0`, `distance == 90.0`, `location_state == "surface"`
 
 #### Полный цикл под землей
 
@@ -742,6 +746,7 @@ drill_forward
   - `distance == 40.0`
   - `strength == 72.0`
   - `reactor_energy == 50.0`
+  - `location_state == "surface"`
 
 #### Преодоление отметки 100 м на поверхности
 
@@ -759,6 +764,7 @@ drill_forward
   - `distance == 80.0`
   - `strength == 53.0`
   - `reactor_energy == 50.0`
+  - `location_state == "surface"`
 
 * **When:**
   - `driver.long_jump()`
@@ -767,6 +773,7 @@ drill_forward
   - `distance == 110.0`
   - `strength == 74.0`
   - `reactor_energy == 85.0`
+  - `location_state == "surface"`
 
 #### Преодоление отметки 100 м под землёй
 
@@ -785,6 +792,7 @@ drill_forward
   - `distance == 80.0`
   - `strength == 47.0`
   - `reactor_energy == 50.0`
+  - `location_state == "underground"`
 
 * **When:**
   - `driver.drill_forward()`
@@ -793,6 +801,7 @@ drill_forward
   - `distance == 120.0`
   - `strength == 66.0`
   - `reactor_energy == 35.0`
+  - `location_state == "underground"`
 
 #### Восстановление на поверхности и под землёй
 
@@ -814,6 +823,7 @@ drill_forward
   - `distance == 210.0`
   - `strength == 68.0`
   - `reactor_energy == 85.0`
+  - `location_state == "underground"`
 
 # 6. Исключения и иерархия
 
@@ -862,19 +872,26 @@ Exception
 
 # 8. Трассируемость «требование → тест»
 
-| Требование | Раздел ТЗ | Тест |
+| Требование | Раздел ТЗ | Тест (TC ID) |
 |---|---|---|
-| Валидация пустого имени | 3.2 | test_init_empty_name_raises |
-| Валидация массы | 3.2 | test_init_mass_out_of_range_raises |
-| Валидация силы и энергии | 3.2 | test_init_strength_energy_out_of_range_raises |
-| Обычный прыжок на поверхности | 3.4.1 | test_basic_jump_updates_state |
-| Дальний прыжок и форсаж | 3.4.2 | test_long_jump_reactor_consumes_energy |
-| Запрет прыжка под землёй | 3.4.1–3.4.2 | test_jump_underground_raises |
-| Пассивное восстановление на отметке 100 м | 3.4.3 | test_recovery_on_distance_mark |
-| Статус содержит все ключи | 3.4.4 | test_status_keys |
-| Смена локации погружение/возврат | 3.4.5–3.4.6 | test_go_and_return_toggle_location |
-| Бурение только под землёй | 3.4.7 | test_drill_forward_surface_raises |
-| Действие без транспорта | 4.3 | test_driver_without_transport_raises |
+| Инициализация параметрами по умолчанию | 3.2 | `test_p1_init_with_defaults` (TC_P_1) |
+| Инициализация всеми параметрами | 3.2 | `test_p2_init_with_all_parameters` (TC_P_2) |
+| Валидация пустого имени | 3.2 | `test_n21_init_empty_name_raises` (TC_N_21) |
+| Валидация массы | 3.2 | `test_n22_init_mass_below_min_raises`, `test_n23_init_mass_above_max_raises` (TC_N_22, TC_N_23) |
+| Валидация силы | 3.2 | `test_n24_init_strength_above_max_raises` (TC_N_24) |
+| Валидация энергии реактора | 3.2 | `test_n25_init_reactor_energy_below_min_raises` (TC_N_25) |
+| Обычный прыжок на поверхности | 3.4.1 | `test_p3_basic_jump_updates_state`, `test_p4_basic_jump_strength_exactly_required` (TC_P_3, TC_P_4) |
+| Запрет обычного прыжка | 3.4.1 | `test_n26_basic_jump_underground_raises`, `test_n27_basic_jump_not_enough_strength_raises` (TC_N_26, TC_N_27) |
+| Дальний прыжок и форсаж | 3.4.2 | `test_p5_long_jump_without_reactor`, `test_p6_long_jump_with_reactor`, `test_p7_long_jump_reactor_energy_exactly_minimum` (TC_P_5–TC_P_7) |
+| Запрет дальнего прыжка | 3.4.2 | `test_n28_long_jump_underground_raises`, `test_n29_long_jump_not_enough_strength_raises`, `test_n30_long_jump_not_enough_energy_raises` (TC_N_28–TC_N_30) |
+| Пассивное восстановление на отметке 100 м | 3.4.3 | `test_p8_recovery_on_distance_mark`, `test_p9_recovery_capped_at_maximum`, `test_n31_recovery_not_triggered_before_mark` (TC_P_8, TC_P_9, TC_N_31) |
+| Статус транспорта | 3.4.4 | `test_p10_status_returns_state_dict`, `test_p20_get_current_status_delegated` (TC_P_10, TC_P_20) |
+| Смена локации погружение/возврат | 3.4.5–3.4.6 | `test_p11_go_underground_from_surface`, `test_p12_return_to_surface_from_underground`, `test_n32_go_underground_already_underground_raises`, `test_n33_go_underground_not_enough_strength_raises`, `test_n34_return_to_surface_already_surface_raises`, `test_n35_return_to_surface_not_enough_strength_raises` (TC_P_11, TC_P_12, TC_N_32–TC_N_35) |
+| Бурение только под землёй | 3.4.7 | `test_p13_drill_forward_underground`, `test_n36_drill_forward_on_surface_raises`, `test_n37_drill_forward_not_enough_strength_raises`, `test_n38_drill_forward_not_enough_energy_raises` (TC_P_13, TC_N_36–TC_N_38) |
+| Водитель: создание транспорта | 4.2–4.3.1 | `test_p14_init_without_transport`, `test_p15_create_hopper_with_defaults`, `test_p16_create_hopper_with_all_parameters` (TC_P_14–TC_P_16) |
+| Делегирование действий транспорту | 4.3.2 | `test_p17_basic_jump_delegated`, `test_p18_long_jump_with_reactor_delegated`, `test_p19_drill_forward_delegated` (TC_P_17–TC_P_19) |
+| Действие без транспорта | 4.3.2–4.3.3 | `test_n39_actions_without_transport_raise`, `test_n40_get_current_status_without_transport_raises` (TC_N_39, TC_N_40) |
+| Сквозные сценарии | 5.2 | `test_s41_two_jumps_on_surface`, `test_s42_two_reactor_jumps`, `test_s43_third_reactor_jump_without_energy_raises`, `test_s44_jump_with_exhausted_strength_raises`, `test_s45_full_underground_cycle`, `test_s46_recovery_after_surface_jump`, `test_s47_recovery_after_underground_drill`, `test_s48_crossing_100m_and_200m_marks` (TC_S_41–TC_S_48) |
 
 Каждая строка разделов 3–6 должна иметь хотя бы один связанный тест.
 
