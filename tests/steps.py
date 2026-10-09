@@ -9,7 +9,7 @@
 
 import unittest
 
-from constants import (
+from tests.constants import (
     Distance,
     Formula,
     Location,
