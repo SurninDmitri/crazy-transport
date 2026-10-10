@@ -9,6 +9,7 @@
 
 import unittest
 
+from tests.logger import begin_test, end_test, log_failure, logger, step
 from tests.constants import (
     Distance,
     Formula,
@@ -29,7 +30,17 @@ class Steps(unittest.TestCase):
     hopper = None
     driver = None
 
+    def setUp(self):
+        """Открывает лог текущего теста с его именем."""
+        begin_test(f"{type(self).__name__}.{self._testMethodName}")
+
+    def tearDown(self):
+        """Закрывает лог текущего теста."""
+        end_test()
+
     # region =====Подготовка=====
+
+    @logger
     def given_hopper(
         self,
         name: str = Transport.NAME,
@@ -53,11 +64,13 @@ class Steps(unittest.TestCase):
                                 distance=distance)  # fmt: skip
         return self.hopper
 
+    @logger
     def given_driver(self) -> Driver:
         """Создаёт водителя без транспорта."""
         self.driver = Driver()
         return self.driver
 
+    @logger
     def given_driver_with_hopper(
         self,
         name: str = Transport.NAME,
@@ -82,32 +95,42 @@ class Steps(unittest.TestCase):
                                 distance=distance)  # fmt: skip
         return self.driver
 
+    @logger
     def given_no_transport(self) -> Driver:
         """Водитель без транспорта (для проверки NoTransportError)."""
         return self.given_driver()
     # endregion
 
     # region =====Действия=====
+    @logger
     def when_basic_jump(self):
         return self._subject().basic_jump()
 
+    @logger
     def when_long_jump(self, use_reactor: bool = False):
         return self._subject().long_jump(use_reactor=use_reactor)  # fmt: skip
 
+    @logger
     def when_go_underground(self):
         return self._subject().go_underground()
 
+    @logger
     def when_return_to_surface(self):
         return self._subject().return_to_surface()
 
+    @logger
     def when_drill_forward(self):
         return self._subject().drill_forward()
 
+    @logger
     def when_apply_recovery(self):
         return self._hopper()._apply_distance_recovery()
+
     # endregion
 
     # region =====Снятие состояния=====
+
+    @logger
     def current_status(self) -> dict:
         return self._subject().get_current_status()
     # endregion
@@ -134,6 +157,7 @@ class Steps(unittest.TestCase):
         return Formula.RECOVERY_BASE - (mass_kg / Formula.RECOVERY_MASS_DIV) * Formula.RECOVERY_FACTOR
 
     @classmethod
+    @logger
     def expected_after_basic_jump(cls, mass_kg: float, status: dict) -> dict:
         cost = cls.basic_jump_cost(mass_kg=mass_kg)  # fmt: skip
         return {
@@ -144,6 +168,7 @@ class Steps(unittest.TestCase):
         }  # fmt: skip
 
     @classmethod
+    @logger
     def expected_after_long_jump(
         cls, mass_kg: float, status: dict, use_reactor: bool = False
     ) -> dict:
@@ -162,6 +187,7 @@ class Steps(unittest.TestCase):
         }  # fmt: skip
 
     @classmethod
+    @logger
     def expected_after_go_underground(cls, mass_kg: float, status: dict) -> dict:
         cost = cls.move_cost(mass_kg=mass_kg)  # fmt: skip
         return {
@@ -172,6 +198,7 @@ class Steps(unittest.TestCase):
         }  # fmt: skip
 
     @classmethod
+    @logger
     def expected_after_return_to_surface(cls, mass_kg: float, status: dict) -> dict:
         cost = cls.move_cost(mass_kg=mass_kg)  # fmt: skip
         return {
@@ -182,6 +209,7 @@ class Steps(unittest.TestCase):
         }  # fmt: skip
 
     @classmethod
+    @logger
     def expected_after_drill_forward(cls, mass_kg: float, status: dict) -> dict:
         cost = cls.drill_cost(mass_kg=mass_kg)  # fmt: skip
         return {
@@ -192,6 +220,7 @@ class Steps(unittest.TestCase):
         }  # fmt: skip
 
     @classmethod
+    @logger
     def expected_after_recovery(cls, mass_kg: float, status: dict) -> dict:
         gain = cls.recovery_amount(mass_kg=mass_kg)  # fmt: skip
         strength = min(status["strength"] + gain, Strength.MAX)  # fmt: skip
@@ -205,6 +234,11 @@ class Steps(unittest.TestCase):
     # endregion
 
     # region =====Проверки=====
+    def step(self, message: str) -> None:
+        """Логирует шаг теста на текущем уровне вложенности."""
+        step(message)
+
+    @logger
     def assert_that(self, actual, expected, msg=None):
         """Сравнивает фактическое значение с ожидаемым."""
         if isinstance(expected, dict):  # fmt: skip
@@ -225,6 +259,7 @@ class Steps(unittest.TestCase):
                                expected=expected,
                                msg=msg)  # fmt: skip
 
+    @logger
     def assert_status(self, expected: dict, msg=None):
         """Сверяет результат get_current_status() с ожидаемым словарём."""
         if not msg:
@@ -237,9 +272,13 @@ class Steps(unittest.TestCase):
     def _formatMessage(self, msg, standard_msg):
         """Сообщение об ошибке: сначала пояснение, затем оригинальный текст unittest."""
         if msg is None:
-            return standard_msg
-        return f"{msg}\n{standard_msg}"
+            text = standard_msg
+        else:
+            text = f"{msg}\n{standard_msg}"
+        log_failure(text)
+        return text
 
+    @logger
     def assert_raises_with_message(self, exception, message, action, *args, **kwargs):
         """Проверяет тип исключения и его текст при выполнении действия."""
         with self.assertRaises(expected_exception=exception) as ctx:  # fmt: skip
@@ -269,6 +308,7 @@ class Steps(unittest.TestCase):
             return self.hopper
         return self.driver.terra_hopper
 
+    @logger
     def _assert_value(self, actual, expected, msg=None):
         if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):  # fmt: skip
             if abs(actual - expected) <= TOLERANCE:
