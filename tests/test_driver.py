@@ -1,7 +1,6 @@
 """Модульные тесты Driver (SPEC 5.1, TC_P_14…TC_P_20, TC_N_39…TC_N_40)."""
 
-from errors import NoTransportError
-from terra_hopper import TerraHopper
+from terra_hopper import NoTransportError, TerraHopper
 from tests.constants import (
     Distance,
     Location,

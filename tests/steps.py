@@ -20,8 +20,7 @@ from tests.constants import (
     TOLERANCE,
     Transport,
 )
-from driver import Driver
-from terra_hopper import TerraHopper
+from terra_hopper import Driver, TerraHopper
 
 
 class Steps(unittest.TestCase):
@@ -132,7 +131,11 @@ class Steps(unittest.TestCase):
 
     @logger
     def current_status(self) -> dict:
-        return self._subject().get_current_status()
+        result = self._subject().get_current_status()
+        if isinstance(result, dict) and result:  # fmt: skip
+            return result
+        self.fail(self._formatMessage(msg=None,
+                                      standard_msg="get_current_status() вернул пустой результат"))  # fmt: skip
     # endregion
 
     # region =====Оракул=====

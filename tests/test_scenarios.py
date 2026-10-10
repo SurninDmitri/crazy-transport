@@ -4,7 +4,7 @@
 проверкой состояния вызывается ``get_current_status()``.
 """
 
-from errors import NotEnoughEnergyError, NotEnoughStrengthError
+from terra_hopper import NotEnoughEnergyError, NotEnoughStrengthError
 from tests.constants import (
     Location,
     Mass,

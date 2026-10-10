@@ -1,7 +1,11 @@
 """Модульные тесты TerraHopper (SPEC 5.1, TC_P_1…TC_P_13, TC_N_21…TC_N_38)."""
 
-from errors import InvalidLocationError, NotEnoughEnergyError, NotEnoughStrengthError
-from terra_hopper import TerraHopper
+from terra_hopper import (
+    InvalidLocationError,
+    NotEnoughEnergyError,
+    NotEnoughStrengthError,
+    TerraHopper,
+)
 from tests.constants import (
     Distance,
     Location,
